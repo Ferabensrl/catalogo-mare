@@ -6,61 +6,49 @@ const CatalogoMare = () => {
   const [carrito, setCarrito] = useState({});
   const [categoriaActiva, setCategoriaActiva] = useState('todos');
   const [busqueda, setBusqueda] = useState('');
-  const [mostrarCarrito, setMostrarCarrito] = useState(false);
   const [comentarioFinal, setComentarioFinal] = useState('');
   const [comentariosProducto, setComentariosProducto] = useState({});
   const [imagenesActivas, setImagenesActivas] = useState({});
+  const [pantalla, setPantalla] = useState('catalogo');
   const [categorias, setCategorias] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
 
-  // Productos de prueba (simulando los datos del Excel)
+  // Productos de prueba
   const productosData = [
     {
       id: 'PASH5016',
       nombre: 'Pashminas',
       categoria: 'textil',
-      categoriaOriginal: 'Textil',
       precio: 245,
       medidas: '70 x 190cm',
       colores: ['Verde', 'Salmon', 'Mostaza'],
-      imagenes: [
-        'https://cdn.jsdelivr.net/gh/Ferabensrl/catalogo-mare@main/imagenes/PASH5016-1.png',
-        'https://cdn.jsdelivr.net/gh/Ferabensrl/catalogo-mare@main/imagenes/PASH5016-2.png',
-        'https://cdn.jsdelivr.net/gh/Ferabensrl/catalogo-mare@main/imagenes/PASH5016-3.png'
-      ],
+      imagenes: ['https://cdn.jsdelivr.net/gh/Ferabensrl/catalogo-mare@main/imagenes/PASH5016-1.png'],
       tieneColoresEspecificos: true
     },
     {
       id: 'LB233',
       nombre: 'Bolsos',
       categoria: 'marroquineria',
-      categoriaOriginal: 'Marroquinería',
       precio: 790,
       medidas: '32 x 13 x 34cm',
       colores: ['Lila', 'Rosado', 'Bordeaux'],
-      imagenes: [
-        'https://cdn.jsdelivr.net/gh/Ferabensrl/catalogo-mare@main/imagenes/LB233-1.png',
-        'https://cdn.jsdelivr.net/gh/Ferabensrl/catalogo-mare@main/imagenes/LB233-2.png'
-      ],
+      imagenes: ['https://cdn.jsdelivr.net/gh/Ferabensrl/catalogo-mare@main/imagenes/LB233-1.png'],
       tieneColoresEspecificos: true
     },
     {
       id: '24002',
       nombre: 'Set caravanas',
       categoria: 'caravanas_acero',
-      categoriaOriginal: 'Caravanas acero',
       precio: 79,
       medidas: '',
       colores: ['SURTIDO'],
-      imagenes: [
-        'https://cdn.jsdelivr.net/gh/Ferabensrl/catalogo-mare@main/imagenes/24002.jpg'
-      ],
+      imagenes: ['https://cdn.jsdelivr.net/gh/Ferabensrl/catalogo-mare@main/imagenes/24002.jpg'],
       tieneColoresEspecificos: false
     }
   ];
 
-  const categoriasIniciales = [
+  const categorias = [
     { id: 'todos', nombre: 'Todos los productos' },
     { id: 'textil', nombre: 'Textil' },
     { id: 'marroquineria', nombre: 'Marroquinería' },
@@ -75,7 +63,7 @@ const CatalogoMare = () => {
       
       console.log('🔄 Iniciando carga desde Excel...');
       
-      // URLs corregidas basadas en tu GitHub
+      // URLs correctas para Ferabensrl/catalogo-mare/datos/catalogo-mare.xlsx
       const urlsExcel = [
         'https://raw.githubusercontent.com/Ferabensrl/catalogo-mare/main/datos/catalogo-mare.xlsx',
         'https://raw.githubusercontent.com/Ferabensrl/catalogo-mare/master/datos/catalogo-mare.xlsx',
@@ -95,7 +83,7 @@ const CatalogoMare = () => {
           
           if (response.ok) {
             urlExitosa = url;
-            console.log('✅ URL exitosa:', url);
+            console.log('✅ URL exitosa encontrada:', url);
             break;
           } else {
             console.log('❌ Falló:', url, '- Status:', response.status);
@@ -106,7 +94,7 @@ const CatalogoMare = () => {
       }
       
       if (!response || !response.ok) {
-        throw new Error('No se pudo acceder al Excel desde GitHub. Usando productos de demostración.');
+        throw new Error('No se pudo acceder al Excel desde GitHub.');
       }
       
       const arrayBuffer = await response.arrayBuffer();
@@ -123,7 +111,7 @@ const CatalogoMare = () => {
       const worksheet = workbook.Sheets['Catalogo_Actual'];
       const productosExcel = XLSX.utils.sheet_to_json(worksheet);
       
-      // Procesar datos
+      // Procesar datos del Excel
       const columnasOperativas = [
         'Código', 'Nombre', 'Descripción', 'Categoría', 'Precio', 'Medidas',
         'Imagen 1', 'Imagen 2', 'Imagen 3', 'Imagen 4', 'Imagen 5', 'Imagen 6', 
@@ -153,17 +141,23 @@ const CatalogoMare = () => {
           id: producto.Código,
           nombre: producto.Nombre,
           categoria: (producto.Categoría || 'General').toLowerCase().replace(/\s+/g, '_'),
-          categoriaOriginal: producto.Categoría || 'General',
           precio: producto.Precio || 0,
           medidas: producto.Medidas || '',
           colores: colores,
-          imagenes: imagenes.length > 0 ? imagenes : ['https://via.placeholder.com/300x300/8F6A50/E3D4C1?text=' + producto.Código],
+          imagenes: imagenes.length > 0 ? imagenes : [`https://via.placeholder.com/300x300/8F6A50/E3D4C1?text=${producto.Código}`],
           tieneColoresEspecificos: coloresDisponibles.length > 0
         };
       }).filter(producto => producto !== null);
       
-      // Generar categorías
-      const categoriasUnicas = [...new Set(productosFormateados.map(p => p.categoriaOriginal))];
+      // Generar categorías dinámicamente
+      const categoriasUnicas = [...new Set(productosFormateados.map(p => {
+        if (p.categoria === 'textil') return 'Textil';
+        if (p.categoria === 'marroquineria') return 'Marroquinería';
+        if (p.categoria === 'caravanas_acero') return 'Caravanas acero';
+        if (p.categoria === 'gargantillas_acero') return 'Gargantillas acero';
+        return p.categoria;
+      }))];
+      
       const categoriasFormateadas = [
         { id: 'todos', nombre: 'Todos los productos' },
         ...categoriasUnicas.map(cat => ({
@@ -183,9 +177,14 @@ const CatalogoMare = () => {
       console.error('❌ Error:', error.message);
       setError(error.message);
       
-      // Usar productos de demostración
+      // Usar productos de demostración como fallback
       setProductos(productosData);
-      setCategorias(categoriasIniciales);
+      setCategorias([
+        { id: 'todos', nombre: 'Todos los productos' },
+        { id: 'textil', nombre: 'Textil' },
+        { id: 'marroquineria', nombre: 'Marroquinería' },
+        { id: 'caravanas_acero', nombre: 'Caravanas Acero' }
+      ]);
       setCargando(false);
       
       console.log('🔄 Usando productos de demostración');
@@ -196,13 +195,6 @@ const CatalogoMare = () => {
     // Intentar cargar desde Excel al iniciar
     cargarProductosDesdeExcel();
   }, []);
-
-  const actualizarComentarioProducto = (productoId, comentario) => {
-    setComentariosProducto(prev => ({
-      ...prev,
-      [productoId]: comentario
-    }));
-  };
 
   const productosFiltrados = productos.filter(producto => {
     const coincideCategoria = categoriaActiva === 'todos' || producto.categoria === categoriaActiva;
@@ -245,10 +237,10 @@ const CatalogoMare = () => {
     setCarrito(nuevoCarrito);
   };
 
-  const cambiarImagen = (productoId, indice) => {
-    setImagenesActivas(prev => ({
+  const actualizarComentarioProducto = (productoId, comentario) => {
+    setComentariosProducto(prev => ({
       ...prev,
-      [productoId]: indice
+      [productoId]: comentario
     }));
   };
 
@@ -289,7 +281,8 @@ const CatalogoMare = () => {
 
     setCarrito({});
     setComentarioFinal('');
-    setMostrarCarrito(false);
+    setComentariosProducto({});
+    setPantalla('catalogo');
   };
 
   const cantidadItems = Object.values(carrito).reduce((total, item) => total + item.cantidad, 0);
@@ -318,17 +311,17 @@ const CatalogoMare = () => {
               <p className="text-xs opacity-80">@mare_uy</p>
             </div>
             <div className="flex items-center space-x-2">
+              {pantalla === 'carrito' && (
+                <button
+                  onClick={() => setPantalla('catalogo')}
+                  className="p-2 rounded-full hover:bg-white/20 transition-colors"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+                >
+                  ←
+                </button>
+              )}
               <button
-                onClick={cargarProductosDesdeExcel}
-                className="p-2 rounded-full hover:bg-white/20 transition-colors"
-                style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
-                title="Cargar desde Excel"
-                disabled={cargando}
-              >
-                <RefreshCw size={16} className={cargando ? 'animate-spin' : ''} />
-              </button>
-              <button
-                onClick={() => setMostrarCarrito(!mostrarCarrito)}
+                onClick={() => setPantalla('carrito')}
                 className="relative p-2 rounded-full hover:bg-white/20 transition-colors"
                 style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
               >
@@ -344,292 +337,241 @@ const CatalogoMare = () => {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-3" size={20} style={{ color: '#8F6A50' }} />
-          <input
-            type="text"
-            placeholder="Buscar productos o códigos..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-            style={{ backgroundColor: 'white' }}
-          />
-        </div>
-      </div>
+      {pantalla === 'catalogo' && (
+        <>
+          {/* Search */}
+          <div className="p-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-3" size={20} style={{ color: '#8F6A50' }} />
+              <input
+                type="text"
+                placeholder="Buscar productos o códigos..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg"
+                style={{ backgroundColor: 'white' }}
+              />
+            </div>
+          </div>
 
-      {/* Categories */}
-      <div className="px-4 pb-4">
-        <div className="flex overflow-x-auto space-x-2 pb-2">
-          {categorias.map(categoria => (
-            <button
-              key={categoria.id}
-              onClick={() => setCategoriaActiva(categoria.id)}
-              className="px-4 py-2 rounded-full whitespace-nowrap transition-colors text-sm font-medium"
-              style={{
-                backgroundColor: categoriaActiva === categoria.id ? '#8F6A50' : 'white',
-                color: categoriaActiva === categoria.id ? 'white' : '#8F6A50'
-              }}
-            >
-              {categoria.nombre}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Status */}
-      <div className="px-4 pb-4">
-        <div className={`border rounded-lg p-3 ${error ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200'}`}>
-          <p className={`text-sm ${error ? 'text-yellow-700' : 'text-green-700'}`}>
-            {error ? (
-              <>🔄 <strong>Usando productos de demostración:</strong> {productos.length} productos • {error}</>
-            ) : (
-              <>✅ <strong>Productos cargados:</strong> {productos.length} productos • <button onClick={cargarProductosDesdeExcel} className="underline hover:no-underline">🔄 Cargar desde Excel</button></>
-            )}
-          </p>
-        </div>
-      </div>
-
-      {/* Products Grid */}
-      <div className="px-4 pb-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {productosFiltrados.map(producto => (
-            <div key={producto.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100">
-              {/* Image */}
-              <div className="relative">
-                <img
-                  src={producto.imagenes[imagenesActivas[producto.id] || 0]}
-                  alt={producto.nombre}
-                  className="w-full h-28 object-cover"
-                  onError={(e) => {
-                    e.target.src = 'https://via.placeholder.com/300x300/8F6A50/E3D4C1?text=' + producto.id;
+          {/* Categories */}
+          <div className="px-4 pb-4">
+            <div className="flex overflow-x-auto space-x-2 pb-2">
+              {categorias.map(categoria => (
+                <button
+                  key={categoria.id}
+                  onClick={() => setCategoriaActiva(categoria.id)}
+                  className="px-4 py-2 rounded-full whitespace-nowrap transition-colors text-sm font-medium"
+                  style={{
+                    backgroundColor: categoriaActiva === categoria.id ? '#8F6A50' : 'white',
+                    color: categoriaActiva === categoria.id ? 'white' : '#8F6A50'
                   }}
-                />
-                
-                <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-bold">
-                  ✅ OK
-                </div>
-                
-                {/* Image navigation */}
-                {producto.imagenes.length > 1 && (
-                  <>
-                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
-                      {producto.imagenes.map((_, indice) => (
-                        <button
-                          key={indice}
-                          onClick={() => cambiarImagen(producto.id, indice)}
-                          className="w-2 h-2 rounded-full transition-colors"
-                          style={{
-                            backgroundColor: (imagenesActivas[producto.id] || 0) === indice ? '#8F6A50' : 'rgba(255,255,255,0.5)'
-                          }}
-                        />
-                      ))}
+                >
+                  {categoria.nombre}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Products */}
+          <div className="px-4 pb-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {productosFiltrados.map(producto => (
+                <div key={producto.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                  <div className="relative">
+                    <img
+                      src={producto.imagenes[0]}
+                      alt={producto.nombre}
+                      className="w-full h-28 object-cover"
+                      onError={(e) => {
+                        e.target.src = 'https://via.placeholder.com/300x300/8F6A50/E3D4C1?text=' + producto.id;
+                      }}
+                    />
+                    <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                      ✅ OK
+                    </div>
+                  </div>
+                  
+                  <div className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-bold text-lg" style={{ color: '#8F6A50' }}>
+                        {producto.nombre}
+                      </h3>
+                      <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: '#E3D4C1', color: '#8F6A50' }}>
+                        {producto.id}
+                      </span>
                     </div>
                     
-                    {producto.imagenes.length > 1 && (
-                      <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
-                        {(imagenesActivas[producto.id] || 0) + 1}/{producto.imagenes.length}
-                      </div>
+                    {producto.medidas && (
+                      <p className="text-sm text-gray-600 mb-2">📏 {producto.medidas}</p>
                     )}
-                  </>
-                )}
-              </div>
-              
-              {/* Content */}
-              <div className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-bold text-lg" style={{ color: '#8F6A50' }}>
-                    {producto.nombre}
-                  </h3>
-                  <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: '#E3D4C1', color: '#8F6A50' }}>
-                    {producto.id}
-                  </span>
-                </div>
-                
-                <p className="text-xs text-gray-500 mb-2">📂 {producto.categoriaOriginal}</p>
-                
-                {producto.medidas && (
-                  <p className="text-sm text-gray-600 mb-2">📏 {producto.medidas}</p>
-                )}
-                
-                <p className="text-2xl font-bold mb-3" style={{ color: '#8F6A50' }}>
-                  ${producto.precio}
-                </p>
-                
-                <div className="space-y-3">
-                  <p className="text-sm font-medium" style={{ color: '#8F6A50' }}>
-                    {producto.tieneColoresEspecificos ? 'Colores disponibles:' : 'Producto único:'}
-                  </p>
-                  
-                  <div className="flex items-center space-x-2 mb-3">
-                    <label className="text-sm font-medium" style={{ color: '#8F6A50' }}>
-                      Cantidad:
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      defaultValue="1"
-                      id={'cantidad-' + producto.id}
-                      className="w-20 text-center border rounded px-2 py-1"
-                      style={{ borderColor: '#8F6A50', color: '#8F6A50' }}
-                    />
-                  </div>
+                    
+                    <p className="text-2xl font-bold mb-3" style={{ color: '#8F6A50' }}>
+                      ${producto.precio}
+                    </p>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <label className="text-sm font-medium" style={{ color: '#8F6A50' }}>
+                          Cantidad:
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          defaultValue="1"
+                          id={'cantidad-' + producto.id}
+                          className="w-20 text-center border rounded px-2 py-1"
+                          style={{ borderColor: '#8F6A50', color: '#8F6A50' }}
+                        />
+                      </div>
 
-                  <div className="mb-3">
-                    <div className="flex space-x-2">
-                      <input
-                        type="text"
-                        placeholder="Comentarios: ej. poneme más negro..."
-                        id={'comentario-' + producto.id}
-                        className="flex-1 text-sm border rounded px-3 py-2"
-                        style={{ borderColor: '#8F6A50', backgroundColor: '#F9F9F9' }}
-                      />
-                      <button
-                        onClick={() => {
-                          const comentarioInput = document.getElementById('comentario-' + producto.id);
-                          const comentario = comentarioInput.value.trim();
-                          if (comentario) {
-                            actualizarComentarioProducto(producto.id, comentario);
-                            comentarioInput.value = '';
-                          }
-                        }}
-                        className="px-3 py-2 text-sm font-medium rounded border"
-                        style={{ backgroundColor: '#8F6A50', color: 'white', borderColor: '#8F6A50' }}
-                      >
-                        💬
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {comentariosProducto[producto.id] && (
-                    <div className="mt-3 p-3 rounded border" style={{ backgroundColor: '#E3D4C1', borderColor: '#8F6A50' }}>
-                      <div className="flex justify-between items-start mb-2">
-                        <p className="text-xs font-medium" style={{ color: '#8F6A50' }}>
-                          💬 Comentario del producto:
-                        </p>
+                      <div className="flex space-x-2">
+                        <input
+                          type="text"
+                          placeholder="Comentarios..."
+                          id={'comentario-' + producto.id}
+                          className="flex-1 text-sm border rounded px-3 py-2"
+                          style={{ borderColor: '#8F6A50', backgroundColor: '#F9F9F9' }}
+                        />
                         <button
-                          onClick={() => actualizarComentarioProducto(producto.id, '')}
-                          className="text-red-500 hover:text-red-700 text-xs px-2 py-1 rounded"
-                          style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
+                          onClick={() => {
+                            const comentarioInput = document.getElementById('comentario-' + producto.id);
+                            const comentario = comentarioInput.value.trim();
+                            if (comentario) {
+                              actualizarComentarioProducto(producto.id, comentario);
+                              comentarioInput.value = '';
+                            }
+                          }}
+                          className="px-3 py-2 text-sm font-medium rounded border"
+                          style={{ backgroundColor: '#8F6A50', color: 'white', borderColor: '#8F6A50' }}
                         >
-                          🗑️
+                          💬
                         </button>
                       </div>
-                      <input
-                        type="text"
-                        value={comentariosProducto[producto.id]}
-                        onChange={(e) => actualizarComentarioProducto(producto.id, e.target.value)}
-                        className="w-full text-sm border rounded px-3 py-2"
-                        style={{ borderColor: '#8F6A50', backgroundColor: 'white', color: '#8F6A50' }}
-                        placeholder="Edita tu comentario aquí..."
-                      />
-                    </div>
-                  )}
-                  
-                  <div className="flex flex-wrap gap-2">
-                    {producto.colores.map(color => (
-                      <button
-                        key={color}
-                        onClick={() => {
-                          const cantidadInput = document.getElementById('cantidad-' + producto.id);
-                          const comentarioInput = document.getElementById('comentario-' + producto.id);
-                          const cantidad = parseInt(cantidadInput.value) || 1;
-                          const comentario = comentarioInput.value;
-                          agregarAlCarrito(producto.id, color, cantidad);
-                          if (comentario) {
-                            actualizarComentarioProducto(producto.id, comentario);
-                          }
-                          cantidadInput.value = 1;
-                          comentarioInput.value = '';
-                        }}
-                        className="px-3 py-2 rounded-full text-sm font-medium transition-colors hover:shadow-md"
-                        style={{ 
-                          backgroundColor: color === 'SURTIDO' ? '#8F6A50' : '#E3D4C1', 
-                          color: color === 'SURTIDO' ? 'white' : '#8F6A50',
-                          border: '1px solid #8F6A50'
-                        }}
-                      >
-                        + {color}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  {/* Cart items for this product */}
-                  {Object.entries(carrito).some(([key]) => key.startsWith(producto.id)) && (
-                    <div className="mt-3 p-3 rounded border-2" style={{ backgroundColor: '#E3D4C1', borderColor: '#8F6A50' }}>
-                      <p className="text-sm font-bold mb-2" style={{ color: '#8F6A50' }}>
-                        🛒 En tu carrito:
-                      </p>
-                      {Object.entries(carrito)
-                        .filter(([key]) => key.startsWith(producto.id))
-                        .map(([key, item]) => (
-                          <div key={key} className="flex items-center justify-between mb-2 p-2 bg-white rounded">
-                            <span className="text-sm font-medium" style={{ color: '#8F6A50' }}>
-                              {item.color}: {item.cantidad} unidades
-                            </span>
-                            <div className="flex items-center space-x-1">
-                              <button
-                                onClick={() => actualizarCantidad(key, item.cantidad - 1)}
-                                className="p-1 text-red-500 hover:bg-red-100 rounded text-xs"
-                              >
-                                -
-                              </button>
-                              <button
-                                onClick={() => actualizarCantidad(key, item.cantidad + 1)}
-                                className="p-1 text-green-500 hover:bg-green-100 rounded text-xs"
-                              >
-                                +
-                              </button>
-                              <button
-                                onClick={() => eliminarDelCarrito(key)}
-                                className="p-1 text-red-500 hover:bg-red-100 rounded text-xs ml-2"
-                              >
-                                🗑️
-                              </button>
-                            </div>
+                      
+                      {comentariosProducto[producto.id] && (
+                        <div className="p-3 rounded border" style={{ backgroundColor: '#E3D4C1', borderColor: '#8F6A50' }}>
+                          <div className="flex justify-between items-start mb-2">
+                            <p className="text-xs font-medium" style={{ color: '#8F6A50' }}>
+                              💬 Comentario:
+                            </p>
+                            <button
+                              onClick={() => actualizarComentarioProducto(producto.id, '')}
+                              className="text-red-500 text-xs px-2 py-1 rounded"
+                              style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
+                            >
+                              🗑️
+                            </button>
                           </div>
+                          <input
+                            type="text"
+                            value={comentariosProducto[producto.id]}
+                            onChange={(e) => actualizarComentarioProducto(producto.id, e.target.value)}
+                            className="w-full text-sm border rounded px-3 py-2"
+                            style={{ borderColor: '#8F6A50', backgroundColor: 'white', color: '#8F6A50' }}
+                          />
+                        </div>
+                      )}
+                      
+                      <div className="flex flex-wrap gap-2">
+                        {producto.colores.map(color => (
+                          <button
+                            key={color}
+                            onClick={() => {
+                              const cantidadInput = document.getElementById('cantidad-' + producto.id);
+                              const comentarioInput = document.getElementById('comentario-' + producto.id);
+                              const cantidad = parseInt(cantidadInput.value) || 1;
+                              const comentario = comentarioInput.value;
+                              agregarAlCarrito(producto.id, color, cantidad);
+                              if (comentario) {
+                                actualizarComentarioProducto(producto.id, comentario);
+                              }
+                              cantidadInput.value = 1;
+                              comentarioInput.value = '';
+                            }}
+                            className="px-3 py-2 rounded-full text-sm font-medium transition-colors hover:shadow-md"
+                            style={{ 
+                              backgroundColor: color === 'SURTIDO' ? '#8F6A50' : '#E3D4C1', 
+                              color: color === 'SURTIDO' ? 'white' : '#8F6A50',
+                              border: '1px solid #8F6A50'
+                            }}
+                          >
+                            + {color}
+                          </button>
                         ))}
+                      </div>
+                      
+                      {Object.entries(carrito).some(([key]) => key.startsWith(producto.id)) && (
+                        <div className="p-3 rounded border-2" style={{ backgroundColor: '#E3D4C1', borderColor: '#8F6A50' }}>
+                          <p className="text-sm font-bold mb-2" style={{ color: '#8F6A50' }}>
+                            🛒 En tu carrito:
+                          </p>
+                          {Object.entries(carrito)
+                            .filter(([key]) => key.startsWith(producto.id))
+                            .map(([key, item]) => (
+                              <div key={key} className="flex items-center justify-between mb-2 p-2 bg-white rounded">
+                                <span className="text-sm font-medium" style={{ color: '#8F6A50' }}>
+                                  {item.color}: {item.cantidad} unidades
+                                </span>
+                                <div className="flex items-center space-x-1">
+                                  <button
+                                    onClick={() => actualizarCantidad(key, item.cantidad - 1)}
+                                    className="p-1 text-red-500 hover:bg-red-100 rounded text-xs"
+                                  >
+                                    -
+                                  </button>
+                                  <button
+                                    onClick={() => actualizarCantidad(key, item.cantidad + 1)}
+                                    className="p-1 text-green-500 hover:bg-green-100 rounded text-xs"
+                                  >
+                                    +
+                                  </button>
+                                  <button
+                                    onClick={() => eliminarDelCarrito(key)}
+                                    className="p-1 text-red-500 hover:bg-red-100 rounded text-xs ml-2"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
 
-      {/* Cart Modal */}
-      {mostrarCarrito && (
-        <div className="fixed inset-0 bg-black/50 z-50">
-          <div className="h-full w-full flex flex-col bg-white">
-            <div className="bg-white border-b p-4 shadow-sm" style={{ borderColor: '#8F6A50' }}>
-              <div className="flex items-center justify-between">
-                <div></div>
-                <h2 className="text-xl font-bold" style={{ color: '#8F6A50' }}>
-                  🛒 Mi Pedido
-                </h2>
+      {pantalla === 'carrito' && (
+        <div className="p-4">
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-2xl font-bold mb-6 text-center" style={{ color: '#8F6A50' }}>
+              🛒 Mi Pedido
+            </h2>
+            
+            {Object.keys(carrito).length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500 mb-4">No hay productos en el carrito</p>
                 <button
-                  onClick={() => setMostrarCarrito(false)}
-                  className="text-gray-500 hover:text-gray-700 text-2xl px-4 py-2 rounded-lg hover:bg-gray-100 border"
+                  onClick={() => setPantalla('catalogo')}
+                  className="px-6 py-3 rounded-lg text-white font-medium"
+                  style={{ backgroundColor: '#8F6A50' }}
                 >
-                  ✕
+                  Ver Productos
                 </button>
               </div>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-4">
-              {Object.keys(carrito).length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-500 mb-2">No hay productos en el carrito</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
+            ) : (
+              <>
+                <div className="space-y-4 mb-6">
                   {Object.entries(carrito).map(([key, item]) => (
-                    <div key={key} className="p-3 rounded-lg border" style={{ backgroundColor: '#E3D4C1', borderColor: '#8F6A50' }}>
-                      <div className="flex justify-between items-start mb-2">
+                    <div key={key} className="p-4 rounded-lg border" style={{ backgroundColor: '#E3D4C1', borderColor: '#8F6A50' }}>
+                      <div className="flex justify-between items-start mb-3">
                         <div>
-                          <h4 className="font-bold" style={{ color: '#8F6A50' }}>
+                          <h4 className="font-bold text-lg" style={{ color: '#8F6A50' }}>
                             {item.producto.nombre} ({item.producto.id})
                           </h4>
                           <p className="text-sm" style={{ color: '#8F6A50' }}>
@@ -638,81 +580,96 @@ const CatalogoMare = () => {
                         </div>
                         <button
                           onClick={() => eliminarDelCarrito(key)}
-                          className="text-red-500 hover:text-red-700 text-sm"
+                          className="text-red-500 text-sm px-3 py-1 rounded"
+                          style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
                         >
                           🗑️
                         </button>
                       </div>
                       
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => actualizarCantidad(key, item.cantidad - 1)}
-                          className="p-1 bg-white rounded hover:bg-gray-100"
-                        >
-                          <Minus size={16} style={{ color: '#8F6A50' }} />
-                        </button>
-                        
-                        <span className="px-3 py-1 bg-white rounded font-bold" style={{ color: '#8F6A50' }}>
-                          {item.cantidad}
-                        </span>
-                        
-                        <button
-                          onClick={() => actualizarCantidad(key, item.cantidad + 1)}
-                          className="p-1 bg-white rounded hover:bg-gray-100"
-                        >
-                          <Plus size={16} style={{ color: '#8F6A50' }} />
-                        </button>
-                        
-                        <div className="flex-1 text-right">
-                          <span className="font-bold" style={{ color: '#8F6A50' }}>
-                            ${item.producto.precio * item.cantidad}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <button
+                            onClick={() => actualizarCantidad(key, item.cantidad - 1)}
+                            className="p-2 bg-white rounded border"
+                            style={{ borderColor: '#8F6A50' }}
+                          >
+                            <Minus size={16} style={{ color: '#8F6A50' }} />
+                          </button>
+                          
+                          <span className="px-4 py-2 bg-white rounded font-bold text-lg" style={{ color: '#8F6A50' }}>
+                            {item.cantidad}
                           </span>
+                          
+                          <button
+                            onClick={() => actualizarCantidad(key, item.cantidad + 1)}
+                            className="p-2 bg-white rounded border"
+                            style={{ borderColor: '#8F6A50' }}
+                          >
+                            <Plus size={16} style={{ color: '#8F6A50' }} />
+                          </button>
                         </div>
+                        
+                        <span className="text-xl font-bold" style={{ color: '#8F6A50' }}>
+                          ${item.producto.precio * item.cantidad}
+                        </span>
                       </div>
+
+                      {comentariosProducto[item.producto.id] && (
+                        <div className="mt-3 pt-3 border-t border-gray-300">
+                          <p className="text-xs font-medium mb-1" style={{ color: '#8F6A50' }}>
+                            💬 Comentario:
+                          </p>
+                          <p className="text-sm bg-white p-2 rounded" style={{ color: '#8F6A50' }}>
+                            {comentariosProducto[item.producto.id]}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
-            
-            <div className="bg-white border-t p-4 shadow-lg" style={{ borderColor: '#8F6A50' }}>
-              <button
-                onClick={() => setMostrarCarrito(false)}
-                className="w-full flex items-center justify-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors px-4 py-3 rounded-lg hover:bg-gray-100 border mb-4"
-              >
-                <span className="text-xl">←</span>
-                <span className="text-sm font-bold">Seguir comprando</span>
-              </button>
 
-              <div className="flex justify-between items-center text-xl font-bold mb-4">
-                <span style={{ color: '#8F6A50' }}>💳 Total:</span>
-                <span style={{ color: '#8F6A50' }}>${calcularTotal()}</span>
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2" style={{ color: '#8F6A50' }}>
-                  📝 Comentarios adicionales del pedido:
-                </label>
-                <textarea
-                  placeholder="Ej: Entregar urgente, horario de recepción..."
-                  value={comentarioFinal}
-                  onChange={(e) => setComentarioFinal(e.target.value)}
-                  className="w-full border rounded px-3 py-2 text-sm"
-                  rows="2"
-                  style={{ borderColor: '#8F6A50', backgroundColor: '#F9F9F9' }}
-                />
-              </div>
+                <div className="border-t pt-6" style={{ borderColor: '#8F6A50' }}>
+                  <div className="flex justify-between items-center text-2xl font-bold mb-6">
+                    <span style={{ color: '#8F6A50' }}>💳 Total:</span>
+                    <span style={{ color: '#8F6A50' }}>${calcularTotal()}</span>
+                  </div>
+                  
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium mb-2" style={{ color: '#8F6A50' }}>
+                      📝 Comentarios adicionales:
+                    </label>
+                    <textarea
+                      placeholder="Ej: Entregar urgente, horario de recepción..."
+                      value={comentarioFinal}
+                      onChange={(e) => setComentarioFinal(e.target.value)}
+                      className="w-full border rounded px-3 py-2 text-sm"
+                      rows="3"
+                      style={{ borderColor: '#8F6A50', backgroundColor: '#F9F9F9' }}
+                    />
+                  </div>
 
-              <button
-                onClick={generarPedido}
-                disabled={Object.keys(carrito).length === 0}
-                className="w-full text-white py-4 rounded-lg font-bold hover:opacity-90 transition-colors flex items-center justify-center space-x-2 shadow-lg disabled:opacity-50"
-                style={{ backgroundColor: Object.keys(carrito).length === 0 ? '#999999' : '#25D366' }}
-              >
-                <Send size={20} />
-                <span>📱 Enviar Pedido por WhatsApp</span>
-              </button>
-            </div>
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => setPantalla('catalogo')}
+                      className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-lg border"
+                    >
+                      <span className="text-xl">←</span>
+                      <span className="font-bold">Seguir comprando</span>
+                    </button>
+
+                    <button
+                      onClick={generarPedido}
+                      className="w-full text-white py-4 rounded-lg font-bold flex items-center justify-center space-x-2 shadow-lg"
+                      style={{ backgroundColor: '#25D366' }}
+                    >
+                      <Send size={20} />
+                      <span>📱 Enviar Pedido por WhatsApp</span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
